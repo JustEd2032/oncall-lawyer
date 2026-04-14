@@ -2,7 +2,6 @@ import "./config/env.js";
 import express from "express";
 import cors from "cors";
 import paymentsRouter from "./routes/payments.js";
-import testRouter from "./routes/test.js";
 import userRoutes from "./routes/users.js";
 import lawyerRoutes from "./routes/lawyers.js";
 import appointmentRoutes from "./routes/appointments.js";
@@ -37,7 +36,6 @@ app.use(express.json());
 
 app.use("/payments", paymentsRouter);
 app.use("/payments", paymentConfirmRoutes);
-app.use("/test", testRouter);
 app.use("/users", userRoutes);
 app.use("/lawyers", lawyerRoutes);
 app.use("/appointments", appointmentRoutes);
