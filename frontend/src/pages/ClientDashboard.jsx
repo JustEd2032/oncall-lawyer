@@ -46,6 +46,21 @@ function ClientDashboard() {
     return unsubscribe;
   }, []);
 
+  const handleCancel = async (appointmentId) => {
+    if (!window.confirm("¿Está seguro que desea cancelar esta cita? · Are you sure you want to cancel this appointment?")) return;
+    try {
+      const token = await user.getIdToken();
+      await api.patch(`/appointments/${appointmentId}/status`,
+        { status: "cancelled" },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setAppointments(prev => prev.map(a => a.id === appointmentId ? { ...a, status: "cancelled" } : a));
+    } catch (err) {
+      console.error("Failed to cancel", err);
+      alert("No se pudo cancelar la cita. · Could not cancel the appointment.");
+    }
+  };
+
   const appts = Array.isArray(appointments) ? appointments : [];
   const upcoming = appts.filter(a => ["confirmed", "pending"].includes(a.status));
   const past = appts.filter(a => ["completed", "cancelled"].includes(a.status));
@@ -112,6 +127,7 @@ function ClientDashboard() {
                       appointment={a}
                       now={now}
                       onJoin={() => navigate(`/call/${a.id}`)}
+                      onCancel={() => handleCancel(a.id)}
                     />
                   ))}
                 </div>
@@ -132,7 +148,7 @@ function ClientDashboard() {
   );
 }
 
-function AppointmentCard({ appointment, now, onJoin }) {
+function AppointmentCard({ appointment, now, onJoin, onCancel }) {
   const canJoin = isCallTime(appointment.scheduledAt, now) &&
     appointment.status === "confirmed";
 
@@ -158,6 +174,18 @@ function AppointmentCard({ appointment, now, onJoin }) {
         {canJoin && onJoin && (
           <button className="btn-gold" style={{ padding: "0.4rem 1rem", fontSize: "0.85rem" }} onClick={onJoin}>
             📞 Join Call
+          </button>
+        )}
+        {["pending", "confirmed"].includes(appointment.status) && onCancel && !canJoin && (
+          <button
+            onClick={onCancel}
+            style={{
+              background: "none", border: "1.5px solid var(--parchment)", borderRadius: "var(--radius)",
+              padding: "0.35rem 0.75rem", fontSize: "0.75rem", color: "var(--error)",
+              cursor: "pointer", fontFamily: "var(--font-body)", fontWeight: "500",
+            }}
+          >
+            Cancelar · Cancel
           </button>
         )}
       </div>
