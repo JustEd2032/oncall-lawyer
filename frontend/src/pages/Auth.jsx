@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../firebase";
 import api from "../api";
 
@@ -11,6 +11,10 @@ export default function Auth() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState(""); // "success" | "error" | ""
+  const [forgotLoading, setForgotLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
@@ -36,6 +40,21 @@ export default function Auth() {
       await cred.user.getIdToken(true);
     } catch (err) { setError(friendlyError(err.code)); }
     finally { setLoading(false); }
+  };
+
+  const handleForgot = async () => {
+    if (!forgotEmail) return setForgotStatus("error:Ingrese su correo electrónico. · Please enter your email.");
+    setForgotLoading(true); setForgotStatus("");
+    try {
+      await sendPasswordResetEmail(auth, forgotEmail);
+      setForgotStatus("success");
+    } catch (err) {
+      if (err.code === "auth/user-not-found" || err.code === "auth/invalid-email") {
+        setForgotStatus("error:Correo no encontrado. · Email not found.");
+      } else {
+        setForgotStatus("error:Ocurrió un error. Intente nuevamente. · An error occurred. Please try again.");
+      }
+    } finally { setForgotLoading(false); }
   };
 
   const friendlyError = (code) => {
@@ -147,10 +166,91 @@ export default function Auth() {
             </button>
             {mode === "login" && (
               <p style={{ textAlign: "center", marginTop: "1rem" }}>
-                <a href="#" style={{ color: "var(--brown-light)", fontSize: "0.8rem" }}>
+                <button
+                  onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotStatus(""); }}
+                  style={{ background: "none", border: "none", color: "var(--brown-light)", fontSize: "0.8rem", cursor: "pointer", fontFamily: "var(--font-body)", textDecoration: "underline" }}
+                >
                   ¿Olvidó su contraseña? · Forgot password?
-                </a>
+                </button>
               </p>
+            )}
+
+            {/* ── Forgot password modal ── */}
+            {showForgot && (
+              <div style={{
+                position: "fixed", inset: 0, background: "rgba(44,26,14,0.6)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                zIndex: 999, padding: "1rem",
+              }} onClick={() => setShowForgot(false)}>
+                <div style={{
+                  background: "var(--white)", borderRadius: "var(--radius-lg)",
+                  padding: "2rem", maxWidth: "420px", width: "100%",
+                  boxShadow: "var(--shadow-lg)", border: "1px solid var(--parchment)",
+                }} onClick={e => e.stopPropagation()}>
+
+                  {forgotStatus === "success" ? (
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: "2.5rem", marginBottom: "1rem" }}>✉️</div>
+                      <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "var(--brown-deep)", marginBottom: "0.75rem" }}>
+                        Correo enviado · Email sent
+                      </h3>
+                      <p style={{ color: "var(--gray-warm)", fontSize: "0.875rem", lineHeight: "1.7", marginBottom: "1.5rem" }}>
+                        Hemos enviado un enlace para restablecer su contraseña a <strong>{forgotEmail}</strong>.<br/>
+                        <em>We sent a password reset link to <strong>{forgotEmail}</strong>.</em>
+                      </p>
+                      <p style={{ color: "var(--gray-warm)", fontSize: "0.8rem", marginBottom: "1.5rem" }}>
+                        Revise su bandeja de entrada y carpeta de spam.<br/>
+                        <em>Check your inbox and spam folder.</em>
+                      </p>
+                      <button className="btn-primary" style={{ width: "100%", justifyContent: "center" }}
+                        onClick={() => setShowForgot(false)}>
+                        Cerrar · Close
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
+                        <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.4rem", color: "var(--brown-deep)" }}>
+                          Restablecer contraseña<br/>
+                          <em style={{ fontStyle: "italic", color: "var(--brown-light)", fontSize: "1rem", fontWeight: "300" }}>Reset password</em>
+                        </h3>
+                        <button onClick={() => setShowForgot(false)} style={{ background: "none", border: "none", fontSize: "1.1rem", color: "var(--gray-warm)", cursor: "pointer" }}>✕</button>
+                      </div>
+
+                      <hr className="divider" />
+
+                      <p style={{ color: "var(--gray-warm)", fontSize: "0.85rem", lineHeight: "1.7", marginBottom: "1.25rem" }}>
+                        Ingrese su correo y le enviaremos un enlace para restablecer su contraseña.<br/>
+                        <em>Enter your email and we'll send you a link to reset your password.</em>
+                      </p>
+
+                      <div className="form-group">
+                        <label className="form-label">Correo electrónico · Email</label>
+                        <input
+                          className="form-input"
+                          type="email"
+                          placeholder="correo@ejemplo.com"
+                          value={forgotEmail}
+                          onChange={e => setForgotEmail(e.target.value)}
+                          onKeyDown={e => e.key === "Enter" && handleForgot()}
+                          autoFocus
+                        />
+                      </div>
+
+                      {forgotStatus.startsWith("error:") && (
+                        <p className="form-error" style={{ marginBottom: "1rem" }}>
+                          {forgotStatus.replace("error:", "")}
+                        </p>
+                      )}
+
+                      <button className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: "0.85rem" }}
+                        onClick={handleForgot} disabled={forgotLoading}>
+                        {forgotLoading ? "Enviando... · Sending..." : "Enviar enlace · Send reset link"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
             )}
           </div>
         </div>

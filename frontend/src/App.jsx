@@ -10,6 +10,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import LawyerDashboard from "./pages/LawyerDashboard";
 import LawyerList from "./pages/LawyerList";
 import CallRoom from "./pages/CallRoom";
+import ResetPassword from "./pages/ResetPassword";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CallNotificationBanner from "./components/CallNotificationBanner";
 import { useCallNotification } from "./hooks/useCallNotification";
@@ -94,6 +95,7 @@ function AppInner({ user, role }) {
         <Route path="/lawyers" element={<ProtectedRoute><LawyerList /></ProtectedRoute>} />
         <Route path="/lawyer-dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/call/:appointmentId" element={<ProtectedRoute><CallRoom /></ProtectedRoute>} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <CallNotificationBanner notification={notification} onDismiss={dismissNotification} />
