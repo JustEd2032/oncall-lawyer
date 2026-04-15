@@ -86,7 +86,7 @@ function LawyerCard({ lawyer, onBook }) {
       <div style={st.cardTop}>
         <div style={st.avatar}>{initials}</div>
         <div>
-          <p style={st.lawyerName}>{lawyer.name || `Lic. #${lawyer.id.slice(0, 6)}`}</p>
+          <p style={st.lawyerName}>Attorney #{lawyer.id.slice(0, 6)}</p>
           <p style={st.lawyerRate}>${lawyer.hourlyRate}/hr</p>
         </div>
       </div>
@@ -229,7 +229,7 @@ function BookingModal({ lawyer, user, onClose, onBooked }) {
     <div style={st.overlay} onClick={onClose}>
       <div className="card" style={st.modal} onClick={e => e.stopPropagation()}>
         <div style={st.modalHeader}>
-          <h2 style={st.modalTitle}>Agendar consulta con {lawyer.name || 'el abogado/a'}</h2>
+          <h2 style={st.modalTitle}>Book Consultation</h2>
           <button style={st.closeBtn} onClick={onClose}>✕</button>
         </div>
 
@@ -322,7 +322,7 @@ function BookingModal({ lawyer, user, onClose, onBooked }) {
                         {formatHour(expandedHour)} — pick a start time
                         <span style={{ color: "var(--gray-500)", fontWeight: "400" }}> (session ends {appointmentDuration} min later)</span>
                       </p>
-                      <div style={st.subSlotsGrid}>
+                      <div style={st.subSlotsGrid} className="slot-grid">
                         {hourGroups[expandedHour].map(slot => (
                           <button
                             key={slot.time}

@@ -311,3 +311,215 @@ input, select, textarea { font-family: var(--font-body); }
 @media (max-width: 768px) {
   .auth-left { padding: 0 !important; }
 }
+
+/* ══════════════════════════════════════
+   DASHBOARD MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Dashboard header */
+  .dash-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .dash-header button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Stats grid - 2 columns on mobile */
+  .dash-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  /* Dashboard tabs */
+  .dash-tabs {
+    gap: 0.4rem !important;
+  }
+  .dash-tabs button {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.75rem !important;
+    flex: 1 !important;
+  }
+
+  /* Appointment cards */
+  .appt-card {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .appt-left {
+    width: 100% !important;
+  }
+  .appt-card > div:last-child {
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  /* Page padding */
+  .page {
+    padding: 1.25rem 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Stats single column on very small screens */
+  .dash-stats-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   LAWYER LIST / BOOKING MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Lawyer cards grid */
+  .lawyer-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Booking modal */
+  .booking-modal {
+    width: 95vw !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    margin: 0 auto !important;
+  }
+
+  /* Slot grid - more columns on mobile */
+  .slot-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   NAVBAR MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.5rem 1rem !important;
+    height: auto !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+  .navbar-links {
+    order: 3 !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+    padding-bottom: 0.5rem !important;
+    gap: 0.5rem !important;
+    flex-wrap: wrap !important;
+  }
+  .navbar-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.75rem !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   AUTH MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .auth-wrapper {
+    flex-direction: column !important;
+    min-height: 100vh !important;
+  }
+  .auth-left {
+    min-height: 200px !important;
+    padding: 0 !important;
+    flex: none !important;
+    width: 100% !important;
+  }
+  /* Hide text column on mobile, show only logo */
+  .auth-left .leftTextCol,
+  .auth-practice-list {
+    display: none !important;
+  }
+  .auth-left .leftLogoCol {
+    width: 100% !important;
+    padding: 1.5rem !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(184,150,46,0.2) !important;
+    min-height: 120px !important;
+  }
+  .auth-left .leftLogoCol img {
+    max-width: 120px !important;
+  }
+  .auth-right {
+    width: 100% !important;
+    padding: 1rem !important;
+    min-height: auto !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   PRIVACY / TERMS MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .section {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   ADMIN PANEL MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  table {
+    font-size: 0.75rem !important;
+  }
+  th, td {
+    padding: 0.5rem 0.6rem !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   CALL ROOM MOBILE
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  .call-header {
+    padding: 0 0.75rem !important;
+    height: 48px !important;
+  }
+  .call-brand {
+    font-size: 1rem !important;
+  }
+}
+
+/* ══════════════════════════════════════
+   GENERAL MOBILE UTILITIES
+══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Cards full width */
+  .card {
+    border-radius: 8px !important;
+  }
+
+  /* Modals full screen on mobile */
+  .modal-overlay {
+    padding: 0.5rem !important;
+    align-items: flex-end !important;
+  }
+
+  /* Buttons full width in forms */
+  .btn-primary, .btn-secondary, .btn-gold {
+    min-height: 44px !important;
+  }
+
+  /* Form inputs larger touch targets */
+  .form-input {
+    min-height: 44px !important;
+    font-size: 16px !important; /* prevents iOS zoom */
+  }
+
+  /* Typography scale down */
+  h1 { font-size: 1.75rem !important; }
+  h2 { font-size: 1.4rem !important; }
+}

@@ -26,12 +26,10 @@ function LawyerDashboard() {
   const navigate = useNavigate();
 
   // Profile
-  const [lawyerName, setLawyerName] = useState("");
   const [specialties, setSpecialties] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
-  const [clientNames, setClientNames] = useState({});
   const [saveMsg, setSaveMsg] = useState("");
 
   // Availability
@@ -61,23 +59,9 @@ function LawyerDashboard() {
         if (!Array.isArray(data)) data = [];
         setAppointments(data);
 
-        // Fetch client names for all appointments
-        const uniqueClientIds = [...new Set(data.map(a => a.clientId).filter(Boolean))];
-        const nameMap = {};
-        await Promise.all(uniqueClientIds.map(async (clientId) => {
-          try {
-            const userRes = await api.get(`/users/${clientId}`, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            nameMap[clientId] = userRes.data?.name || userRes.data?.email || `Cliente #${clientId.slice(0, 6)}`;
-          } catch (e) { console.error('Failed to fetch client name for', clientId, e?.response?.status); nameMap[clientId] = `Cliente #${clientId.slice(0, 6)}`; }
-        }));
-        setClientNames(nameMap);
-
         try {
           const p = await api.get(`/lawyers/${firebaseUser.uid}`);
           if (p?.data) {
-            setLawyerName(p.data.name || "");
             setSpecialties(p.data.specialties?.join(", ") || "");
             setHourlyRate(p.data.hourlyRate || "");
             setBio(p.data.bio || "");
@@ -114,7 +98,6 @@ function LawyerDashboard() {
     try {
       const token = await user.getIdToken();
       await api.post("/lawyers", {
-        name: lawyerName.trim(),
         specialties: specialties.split(",").map(s => s.trim()).filter(Boolean),
         hourlyRate: parseFloat(hourlyRate), bio,
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -189,14 +172,14 @@ function LawyerDashboard() {
       </div>
       <Navbar user={user} />
       <div className="page" style={{ position: "relative", zIndex: 1 }}>
-        <div className="fade-up" style={s.header}>
+        <div className="fade-up dash-header" style={s.header}>
           <div>
             <h1 style={s.pageTitle}>Lawyer Dashboard</h1>
             <p style={s.pageSubtitle}>Manage appointments, availability and profile</p>
           </div>
         </div>
 
-        <div className="fade-up-2" style={s.statsRow}>
+        <div className="fade-up-2 dash-stats-row" style={s.statsRow}>
           {[
             { label: "Total", value: appts.length, icon: "📋" },
             { label: "Upcoming", value: upcoming.length, icon: "📅" },
@@ -211,7 +194,7 @@ function LawyerDashboard() {
           ))}
         </div>
 
-        <div className="fade-up-3" style={s.tabs}>
+        <div className="fade-up-3 dash-tabs" style={s.tabs}>
           {["appointments","availability","profile"].map(tab => (
             <button key={tab} style={{ ...s.tab, ...(activeTab === tab ? s.tabActive : {}) }} onClick={() => setActiveTab(tab)}>
               {tab === "appointments" ? "📅 Appointments" : tab === "availability" ? "🗓 Availability" : "👤 Profile"}
@@ -234,7 +217,7 @@ function LawyerDashboard() {
                   <section style={{ marginBottom: "2rem" }}>
                     <h2 style={s.sectionTitle}>Upcoming</h2>
                     <div style={s.apptList}>
-                      {upcoming.map(a => <AppointmentRow key={a.id} appointment={a} now={now} clientNames={clientNames} onStatusChange={handleStatusChange} onJoin={() => navigate(`/call/${a.id}`)} />)}
+                      {upcoming.map(a => <AppointmentRow key={a.id} appointment={a} now={now} onStatusChange={handleStatusChange} onJoin={() => navigate(`/call/${a.id}`)} />)}
                     </div>
                   </section>
                 )}
@@ -242,7 +225,7 @@ function LawyerDashboard() {
                   <section>
                     <h2 style={s.sectionTitle}>Past</h2>
                     <div style={s.apptList}>
-                      {past.map(a => <AppointmentRow key={a.id} appointment={a} now={now} clientNames={clientNames} onStatusChange={handleStatusChange} />)}
+                      {past.map(a => <AppointmentRow key={a.id} appointment={a} now={now} onStatusChange={handleStatusChange} />)}
                     </div>
                   </section>
                 )}
@@ -393,11 +376,6 @@ function LawyerDashboard() {
           <div className="card fade-up" style={{ padding: "2rem", maxWidth: "600px" }}>
             <h2 style={s.sectionTitle}>My Lawyer Profile</h2>
             <div className="form-group">
-              <label className="form-label">Nombre completo · Full name</label>
-              <input className="form-input" type="text" placeholder="Lic. Juan Prudente Torres"
-                value={lawyerName} onChange={e => setLawyerName(e.target.value)} />
-            </div>
-            <div className="form-group">
               <label className="form-label">Specialties</label>
               <input className="form-input" placeholder="Family Law, Immigration" value={specialties} onChange={e => setSpecialties(e.target.value)} />
               <span style={{ fontSize: "0.75rem", color: "var(--gray-300)" }}>Separate with commas</span>
@@ -419,14 +397,14 @@ function LawyerDashboard() {
   );
 }
 
-function AppointmentRow({ appointment, now, onStatusChange, onJoin, clientNames = {} }) {
+function AppointmentRow({ appointment, now, onStatusChange, onJoin }) {
   const canJoin = isCallTime(appointment.scheduledAt, now) && appointment.status === "confirmed";
   return (
     <div className="card" style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", ...(canJoin ? { borderLeft: "3px solid var(--gold)" } : {}) }}>
       <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
         <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--parchment)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>👤</div>
         <div>
-          <p style={{ fontWeight: "600", color: "var(--brown-deep)", fontSize: "0.9rem" }}>Cliente: {clientNames[appointment.clientId] || appointment.clientId?.slice(0, 6)}</p>
+          <p style={{ fontWeight: "600", color: "var(--brown-deep)", fontSize: "0.9rem" }}>Client: {appointment.clientId?.slice(0, 10)}...</p>
           <p style={{ fontSize: "0.82rem", color: "var(--gray-warm)", marginTop: "0.1rem" }}>{formatDate(appointment.scheduledAt)}</p>
           {canJoin && <p style={{ fontSize: "0.8rem", color: "var(--gold)", fontWeight: "600", marginTop: "0.2rem" }}>{getTimeUntil(appointment.scheduledAt, now)}</p>}
         </div>
