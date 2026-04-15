@@ -31,6 +31,7 @@ function LawyerDashboard() {
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
+  const [clientNames, setClientNames] = useState({});
 
   // Availability
   const [days, setDays] = useState(makeDefaultDays());
@@ -58,6 +59,25 @@ function LawyerDashboard() {
         if (!Array.isArray(data)) data = data?.appointments ?? data?.data ?? [];
         if (!Array.isArray(data)) data = [];
         setAppointments(data);
+
+        // Fetch client names (email from users collection)
+        const uniqueClientIds = [...new Set(data.map(a => a.clientId).filter(Boolean))];
+        const nameMap = {};
+        await Promise.all(uniqueClientIds.map(async (clientId) => {
+          try {
+            const token2 = await firebaseUser.getIdToken();
+            const res = await api.get(`/users/${clientId}`, { headers: { Authorization: `Bearer ${token2}` } });
+            const userEmail = res.data?.email;
+            // Also try lawyers collection in case this is a lawyer booking
+            let lawyerName = null;
+            try {
+              const lRes = await api.get(`/lawyers/${clientId}`);
+              lawyerName = lRes.data?.name || null;
+            } catch {}
+            nameMap[clientId] = lawyerName || res.data?.name || userEmail || `Cliente #${clientId.slice(0, 6)}`;
+          } catch { nameMap[clientId] = `Cliente #${clientId.slice(0, 6)}`; }
+        }));
+        setClientNames(nameMap);
 
         try {
           const p = await api.get(`/lawyers/${firebaseUser.uid}`);
@@ -217,7 +237,7 @@ function LawyerDashboard() {
                   <section style={{ marginBottom: "2rem" }}>
                     <h2 style={s.sectionTitle}>Upcoming</h2>
                     <div style={s.apptList}>
-                      {upcoming.map(a => <AppointmentRow key={a.id} appointment={a} now={now} onStatusChange={handleStatusChange} onJoin={() => navigate(`/call/${a.id}`)} />)}
+                      {upcoming.map(a => <AppointmentRow key={a.id} appointment={a} now={now} clientNames={clientNames} onStatusChange={handleStatusChange} onJoin={() => navigate(`/call/${a.id}`)} />)}
                     </div>
                   </section>
                 )}
@@ -225,7 +245,7 @@ function LawyerDashboard() {
                   <section>
                     <h2 style={s.sectionTitle}>Past</h2>
                     <div style={s.apptList}>
-                      {past.map(a => <AppointmentRow key={a.id} appointment={a} now={now} onStatusChange={handleStatusChange} />)}
+                      {past.map(a => <AppointmentRow key={a.id} appointment={a} now={now} clientNames={clientNames} onStatusChange={handleStatusChange} />)}
                     </div>
                   </section>
                 )}
@@ -397,14 +417,14 @@ function LawyerDashboard() {
   );
 }
 
-function AppointmentRow({ appointment, now, onStatusChange, onJoin }) {
+function AppointmentRow({ appointment, now, onStatusChange, onJoin, clientNames = {} }) {
   const canJoin = isCallTime(appointment.scheduledAt, now) && appointment.status === "confirmed";
   return (
     <div className="card" style={{ padding: "1.25rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem", ...(canJoin ? { borderLeft: "3px solid var(--gold)" } : {}) }}>
       <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
         <div style={{ width: "40px", height: "40px", borderRadius: "10px", background: "var(--parchment)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.1rem" }}>👤</div>
         <div>
-          <p style={{ fontWeight: "600", color: "var(--brown-deep)", fontSize: "0.9rem" }}>Client: {appointment.clientId?.slice(0, 10)}...</p>
+          <p style={{ fontWeight: "600", color: "var(--brown-deep)", fontSize: "0.9rem" }}>Cliente: {clientNames[appointment.clientId] || `#${appointment.clientId?.slice(0, 8)}`}</p>
           <p style={{ fontSize: "0.82rem", color: "var(--gray-warm)", marginTop: "0.1rem" }}>{formatDate(appointment.scheduledAt)}</p>
           {canJoin && <p style={{ fontSize: "0.8rem", color: "var(--gold)", fontWeight: "600", marginTop: "0.2rem" }}>{getTimeUntil(appointment.scheduledAt, now)}</p>}
         </div>

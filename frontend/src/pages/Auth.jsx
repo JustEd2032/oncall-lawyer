@@ -23,15 +23,22 @@ export default function Auth() {
     setError(""); setLoading(true);
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
+      // Reload user to get fresh emailVerified status from Firebase
+      await reload(cred.user);
       if (!cred.user.emailVerified) {
         await sendEmailVerification(cred.user);
         setError("Verifique su correo antes de iniciar sesión. Le reenviamos el enlace de verificación. · Please verify your email first. We resent the verification link.");
         setLoading(false);
         return;
       }
-      const token = await cred.user.getIdToken();
+      const token = await cred.user.getIdToken(true); // force refresh token
       await api.post("/users", {}, { headers: { Authorization: `Bearer ${token}` } });
-      await cred.user.getIdToken(true);
+      // Fetch role and navigate manually — don't rely on onAuthStateChanged re-firing
+      const { getDoc, doc } = await import("firebase/firestore");
+      const { db } = await import("../firebase");
+      const userDoc = await getDoc(doc(db, "users", cred.user.uid));
+      const role = userDoc.exists() ? (userDoc.data().role || "client") : "client";
+      navigate(role === "lawyer" ? "/lawyer-dashboard" : "/dashboard");
     } catch (err) { setError(friendlyError(err.code)); }
     finally { setLoading(false); }
   };
