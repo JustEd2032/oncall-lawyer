@@ -6,25 +6,29 @@ import { getLawyerById } from "../services/lawyers.js";
 const router = express.Router();
 
 router.post("/create-intent", authenticate, async (req, res) => {
-  const { lawyerId } = req.body;
+  try {
+    const { lawyerId } = req.body;
 
-  if (!lawyerId) {
-    return res.status(400).json({ error: "lawyerId is required" });
+    if (!lawyerId) {
+      return res.status(400).json({ error: "lawyerId is required" });
+    }
+
+    const lawyer = await getLawyerById(lawyerId);
+    if (!lawyer) return res.status(404).json({ error: "Lawyer not found" });
+
+    const amount = lawyer.hourlyRate * 100;
+
+    const intent = await stripe.paymentIntents.create({
+      amount,
+      currency: "usd",
+      automatic_payment_methods: { enabled: true }
+    });
+
+    res.json({ clientSecret: intent.client_secret });
+  } catch (err) {
+    console.error("Create payment intent error:", err);
+    res.status(500).json({ error: "Failed to create payment intent" });
   }
-
-  // Fetch the lawyer's rate from DB — never trust amount from the client
-  const lawyer = await getLawyerById(lawyerId);
-  if (!lawyer) return res.status(404).json({ error: "Lawyer not found" });
-
-  const amount = lawyer.hourlyRate * 100; // convert dollars to cents for Stripe
-
-  const intent = await stripe.paymentIntents.create({
-    amount,
-    currency: "usd",
-    automatic_payment_methods: { enabled: true }
-  });
-
-  res.json({ clientSecret: intent.client_secret });
 });
 
 export default router;

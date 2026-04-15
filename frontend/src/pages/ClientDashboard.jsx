@@ -12,6 +12,7 @@ function ClientDashboard() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [now, setNow] = useState(new Date());
+  const [lawyerNames, setLawyerNames] = useState({});
   const navigate = useNavigate();
 
   // Tick every 30 seconds so Join Call button appears automatically
@@ -36,6 +37,17 @@ function ClientDashboard() {
           (a, b) => statusOrder.indexOf(a.status) - statusOrder.indexOf(b.status)
         );
         setAppointments(sorted);
+
+        // Fetch lawyer names for all appointments
+        const uniqueLawyerIds = [...new Set(sorted.map(a => a.lawyerId).filter(Boolean))];
+        const nameMap = {};
+        await Promise.all(uniqueLawyerIds.map(async (lawyerId) => {
+          try {
+            const lRes = await api.get(`/lawyers/${lawyerId}`);
+            nameMap[lawyerId] = lRes.data?.name || `Abogado/a #${lawyerId.slice(0, 6)}`;
+          } catch { nameMap[lawyerId] = `Abogado/a #${lawyerId.slice(0, 6)}`; }
+        }));
+        setLawyerNames(nameMap);
       } catch (err) {
         console.error("Failed to load appointments", err);
         setAppointments([]);
@@ -126,6 +138,7 @@ function ClientDashboard() {
                       key={a.id}
                       appointment={a}
                       now={now}
+                      lawyerName={lawyerNames[a.lawyerId]}
                       onJoin={() => navigate(`/call/${a.id}`)}
                       onCancel={() => handleCancel(a.id)}
                     />
@@ -137,7 +150,7 @@ function ClientDashboard() {
               <section className="fade-up-3">
                 <h2 style={styles.sectionTitle}>Past</h2>
                 <div style={styles.appointmentList}>
-                  {past.map(a => <AppointmentCard key={a.id} appointment={a} now={now} />)}
+                  {past.map(a => <AppointmentCard key={a.id} appointment={a} now={now} lawyerName={lawyerNames[a.lawyerId]} />)}
                 </div>
               </section>
             )}
@@ -148,7 +161,7 @@ function ClientDashboard() {
   );
 }
 
-function AppointmentCard({ appointment, now, onJoin, onCancel }) {
+function AppointmentCard({ appointment, now, onJoin, onCancel, lawyerName }) {
   const canJoin = isCallTime(appointment.scheduledAt, now) &&
     appointment.status === "confirmed";
 
@@ -160,7 +173,7 @@ function AppointmentCard({ appointment, now, onJoin, onCancel }) {
       <div style={styles.apptLeft}>
         <div style={styles.apptIcon}>⚖️</div>
         <div>
-          <p style={styles.apptLawyer}>Lawyer: {appointment.lawyerId?.slice(0, 8)}...</p>
+          <p style={styles.apptLawyer}>{lawyerName || `Abogado/a #${appointment.lawyerId?.slice(0, 6)}`}</p>
           <p style={styles.apptDate}>{formatDate(appointment.scheduledAt)}</p>
           {canJoin && (
             <p style={styles.timeUntil}>{getTimeUntil(appointment.scheduledAt, now)}</p>

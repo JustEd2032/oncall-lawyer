@@ -10,18 +10,59 @@ import {
 
 const router = express.Router();
 
+// ── Sanitization helpers ──
+const stripHtml = (str) => {
+  if (typeof str !== "string") return str;
+  return str
+    .replace(/<[^>]*>/g, "")        // remove HTML tags
+    .replace(/[<>"'`]/g, "")      // remove dangerous chars
+    .trim()
+    .slice(0, 1000);                 // max length
+};
+
+const stripShort = (str, max = 200) => {
+  if (typeof str !== "string") return str;
+  return str.replace(/<[^>]*>/g, "").replace(/[<>"'`]/g, "").trim().slice(0, max);
+};
+
+const sanitizeRate = (val) => {
+  const n = parseFloat(val);
+  if (isNaN(n) || n < 0 || n > 100000) return null;
+  return Math.round(n * 100) / 100;
+};
+
 router.post("/", authenticate, requireRole("lawyer"), async (req, res) => {
-  const userId = req.user.uid;
-  const { specialties, hourlyRate, bio } = req.body;
+  try {
+    const userId = req.user.uid;
+    const { name, specialties, hourlyRate, bio } = req.body;
 
-  const lawyer = await createLawyerProfile(userId, {
-    userId,
-    specialties,
-    hourlyRate,
-    bio
-  });
+    // Sanitize all inputs
+    const cleanName = stripShort(name, 100) || "";
+    const cleanBio  = stripHtml(bio) || "";
+    const cleanRate = sanitizeRate(hourlyRate);
+    const cleanSpecialties = Array.isArray(specialties)
+      ? specialties.map(s => stripShort(s, 50)).filter(Boolean).slice(0, 20)
+      : typeof specialties === "string"
+        ? specialties.split(",").map(s => stripShort(s, 50)).filter(Boolean).slice(0, 20)
+        : [];
 
-  res.json(lawyer);
+    if (cleanRate === null) {
+      return res.status(400).json({ error: "Invalid hourly rate" });
+    }
+
+    const lawyer = await createLawyerProfile(userId, {
+      userId,
+      name: cleanName,
+      specialties: cleanSpecialties,
+      hourlyRate: cleanRate,
+      bio: cleanBio,
+    });
+
+    res.json(lawyer);
+  } catch (err) {
+    console.error("Create lawyer profile error:", err);
+    res.status(500).json({ error: "Failed to create lawyer profile" });
+  }
 });
 
 router.get("/", async (req, res) => {
@@ -29,6 +70,7 @@ router.get("/", async (req, res) => {
     const lawyers = await listAvailableLawyers();
     res.json(lawyers);
   } catch (err) {
+    console.error("List lawyers error:", err);
     res.status(500).json({ error: "Failed to fetch lawyers" });
   }
 });
@@ -39,6 +81,7 @@ router.get("/:id", async (req, res) => {
     if (!lawyer) return res.status(404).json({ error: "Lawyer not found" });
     res.json(lawyer);
   } catch (err) {
+    console.error("Get lawyer error:", err);
     res.status(500).json({ error: "Failed to fetch lawyer" });
   }
 });

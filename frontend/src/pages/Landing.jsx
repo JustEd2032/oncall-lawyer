@@ -63,7 +63,7 @@ export default function Landing() {
             <button
               className="btn-gold"
               style={{ padding: "0.9rem 2.25rem", fontSize: "0.9rem" }}
-              onClick={() => navigate("/auth")}
+              onClick={() => navigate("/auth?tab=register")}
             >
               Agendar Consulta
             </button>
@@ -165,7 +165,7 @@ export default function Landing() {
               <button
                 className="btn-gold"
                 style={{ width: "100%", justifyContent: "center", marginTop: "1.75rem", padding: "0.9rem" }}
-                onClick={() => navigate("/auth")}
+                onClick={() => navigate("/auth?tab=register")}
               >
                 Agendar Consulta en Línea
               </button>
@@ -228,8 +228,7 @@ const s = {
     letterSpacing: "0.08em", textTransform: "uppercase", transition: "color 0.2s",
   },
 
-  hero: { position: "relative", zIndex: 1,
-    position: "relative", minHeight: "92vh",
+  hero: { position: "relative", zIndex: 1, minHeight: "92vh",
     background: "linear-gradient(160deg, var(--brown-deep) 0%, var(--brown) 55%, var(--brown-mid) 100%)",
     display: "flex", alignItems: "center",
     overflow: "hidden",

@@ -7,24 +7,32 @@ const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 router.post("/confirm", authenticate, async (req, res) => {
-  const { paymentIntentId, appointmentId } = req.body;
+  try {
+    const { paymentIntentId, appointmentId } = req.body;
 
-  // Verify the appointment belongs to the requesting user
-  const appointment = await getAppointmentById(appointmentId);
-  if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+    if (!paymentIntentId || !appointmentId) {
+      return res.status(400).json({ error: "paymentIntentId and appointmentId are required" });
+    }
 
-  if (appointment.clientId !== req.user.uid) {
-    return res.status(403).json({ error: "Forbidden" });
+    const appointment = await getAppointmentById(appointmentId);
+    if (!appointment) return res.status(404).json({ error: "Appointment not found" });
+
+    if (appointment.clientId !== req.user.uid) {
+      return res.status(403).json({ error: "Forbidden" });
+    }
+
+    const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (intent.status === "succeeded") {
+      await updateAppointmentStatus(appointmentId, "confirmed");
+      return res.json({ confirmed: true });
+    }
+
+    res.status(400).json({ error: "Payment not completed" });
+  } catch (err) {
+    console.error("Confirm payment error:", err);
+    res.status(500).json({ error: "Failed to confirm payment" });
   }
-
-  const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
-
-  if (intent.status === "succeeded") {
-    await updateAppointmentStatus(appointmentId, "confirmed");
-    return res.json({ confirmed: true });
-  }
-
-  res.status(400).json({ error: "Payment not completed" });
 });
 
 export default router;

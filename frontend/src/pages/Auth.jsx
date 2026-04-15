@@ -5,11 +5,12 @@ import { auth } from "../firebase";
 import api from "../api";
 
 export default function Auth() {
-  const [mode, setMode] = useState("login"); // "login" | "register" | "verify"
+  const [mode, setMode] = useState(() => new URLSearchParams(window.location.search).get("tab") === "register" ? "register" : "login"); // "login" | "register" | "verify"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [selectedRole, setSelectedRole] = useState("client");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
@@ -37,6 +38,7 @@ export default function Auth() {
 
   const handleRegister = async () => {
     setError("");
+    if (!agreedToTerms) return setError("Debe aceptar los Términos de Servicio para continuar. · You must accept the Terms of Service to continue.");
     if (password !== confirmPassword) return setError("Las contraseñas no coinciden. · Passwords do not match.");
     if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres. · Password must be at least 6 characters.");
     setLoading(true);
@@ -124,11 +126,11 @@ export default function Auth() {
           {mode !== "verify" && (
             <div style={s.tabs}>
               <button style={{ ...s.tab, ...(mode === "login" ? s.tabActive : {}) }}
-                onClick={() => { setMode("login"); setError(""); }}>
+                onClick={() => { setMode("login"); setError(""); setAgreedToTerms(false); }}>
                 Iniciar Sesión
               </button>
               <button style={{ ...s.tab, ...(mode === "register" ? s.tabActive : {}) }}
-                onClick={() => { setMode("register"); setError(""); }}>
+                onClick={() => { setMode("register"); setError(""); setAgreedToTerms(false); }}>
                 Registrarse
               </button>
             </div>
@@ -160,7 +162,7 @@ export default function Auth() {
                   <em>Didn't receive it? Check your spam folder.</em>
                 </p>
                 <button className="btn-primary" style={{ width: "100%", justifyContent: "center" }}
-                  onClick={() => { setMode("login"); setError(""); }}>
+                  onClick={() => { setMode("login"); setError(""); setAgreedToTerms(false); }}>
                   Ir a iniciar sesión · Go to login
                 </button>
               </div>
@@ -233,6 +235,27 @@ export default function Auth() {
                   </>
                 )}
 
+                {mode === "register" && (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "0.6rem", marginBottom: "1rem" }}>
+                    <input
+                      type="checkbox"
+                      id="tos-check"
+                      checked={agreedToTerms}
+                      onChange={e => setAgreedToTerms(e.target.checked)}
+                      style={{ marginTop: "3px", accentColor: "var(--gold)", width: "15px", height: "15px", flexShrink: 0, cursor: "pointer" }}
+                    />
+                    <label htmlFor="tos-check" style={{ fontSize: "0.78rem", color: "var(--gray-warm)", lineHeight: "1.6", cursor: "pointer" }}>
+                      He leído y acepto los{" "}
+                      <a href="/terminos" target="_blank" style={{ color: "var(--brown-deep)", textDecoration: "underline" }}>Términos de Servicio</a>
+                      {" "}y el{" "}
+                      <a href="/privacidad" target="_blank" style={{ color: "var(--brown-deep)", textDecoration: "underline" }}>Aviso de Privacidad</a>.<br/>
+                      <em>I have read and accept the{" "}
+                      <a href="/terminos" target="_blank" style={{ color: "var(--brown-deep)", textDecoration: "underline" }}>Terms of Service</a>
+                      {" "}and{" "}
+                      <a href="/privacidad" target="_blank" style={{ color: "var(--brown-deep)", textDecoration: "underline" }}>Privacy Policy</a>.</em>
+                    </label>
+                  </div>
+                )}
                 {error && <p className="form-error" style={{ marginBottom: "1rem" }}>{error}</p>}
 
                 <button className="btn-primary"

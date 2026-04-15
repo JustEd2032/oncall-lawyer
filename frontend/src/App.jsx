@@ -10,8 +10,10 @@ import ClientDashboard from "./pages/ClientDashboard";
 import LawyerDashboard from "./pages/LawyerDashboard";
 import LawyerList from "./pages/LawyerList";
 import CallRoom from "./pages/CallRoom";
-import ResetPassword from "./pages/ResetPassword";
+import AuthAction from "./pages/AuthAction";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import AdminPanel from "./pages/AdminPanel";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CallNotificationBanner from "./components/CallNotificationBanner";
 import { useCallNotification } from "./hooks/useCallNotification";
@@ -91,13 +93,15 @@ function AppInner({ user, role }) {
     <>
       <Routes>
         <Route path="/" element={<Landing />} />
-        <Route path="/auth" element={user ? <Navigate to={defaultRedirect} /> : <Auth />} />
+        <Route path="/auth" element={user && user.emailVerified ? <Navigate to={defaultRedirect} /> : <Auth />} />
         <Route path="/dashboard" element={<ProtectedRoute><ClientDashboard /></ProtectedRoute>} />
         <Route path="/lawyers" element={<ProtectedRoute><LawyerList /></ProtectedRoute>} />
         <Route path="/lawyer-dashboard" element={<ProtectedRoute><LawyerDashboard /></ProtectedRoute>} />
         <Route path="/call/:appointmentId" element={<ProtectedRoute><CallRoom /></ProtectedRoute>} />
-        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/reset-password" element={<AuthAction />} />
         <Route path="/privacidad" element={<PrivacyPolicy />} />
+        <Route path="/terminos" element={<TermsOfService />} />
+        <Route path="/admin" element={<AdminPanel />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       <CallNotificationBanner notification={notification} onDismiss={dismissNotification} />

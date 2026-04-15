@@ -19,19 +19,26 @@ router.post(
         process.env.STRIPE_WEBHOOK_SECRET
       );
     } catch (err) {
+      console.error("Webhook signature error:", err.message);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    if (event.type === "payment_intent.succeeded") {
-      const intent = event.data.object;
-      const appointmentId = intent.metadata.appointmentId;
+    try {
+      if (event.type === "payment_intent.succeeded") {
+        const intent = event.data.object;
+        const appointmentId = intent.metadata?.appointmentId;
 
-      if (appointmentId) {
-        await updateAppointmentStatus(appointmentId, "confirmed");
+        if (appointmentId) {
+          await updateAppointmentStatus(appointmentId, "confirmed");
+          console.log(`✅ Appointment ${appointmentId} confirmed via webhook`);
+        }
       }
-    }
 
-    res.json({ received: true });
+      res.json({ received: true });
+    } catch (err) {
+      console.error("Webhook handler error:", err);
+      res.status(500).json({ error: "Webhook handler failed" });
+    }
   }
 );
 

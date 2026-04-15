@@ -7,6 +7,17 @@ const router = express.Router();
 
 const VALID_ROLES = ["client", "lawyer"];
 
+// ── Sanitization ──
+const cleanEmail = (str) => {
+  if (typeof str !== "string") return "";
+  return str.toLowerCase().trim().slice(0, 254);
+};
+
+const cleanStr = (str, max = 100) => {
+  if (typeof str !== "string") return "";
+  return str.replace(/<[^>]*>/g, "").replace(/[<>'"` ]/g, " ").trim().slice(0, max);
+};
+
 router.post("/", authenticate, async (req, res) => {
   try {
     const userId = req.user.uid;
@@ -22,7 +33,7 @@ router.post("/", authenticate, async (req, res) => {
     const role = VALID_ROLES.includes(requestedRole) ? requestedRole : "client";
 
     const newUser = await createUser(userId, {
-      email,
+      email: cleanEmail(email || ""),
       role,
       createdAt: new Date()
     });
@@ -39,12 +50,16 @@ router.post("/", authenticate, async (req, res) => {
 
 router.get("/:id", authenticate, async (req, res) => {
   try {
-    if (req.user.uid !== req.params.id) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
     const user = await getUser(req.params.id);
     if (!user) return res.status(404).json({ error: "User not found" });
-    res.json(user);
+
+    // Own profile — return everything
+    if (req.user.uid === req.params.id) {
+      return res.json(user);
+    }
+
+    // Other user — return only public fields (name + email for display)
+    return res.json({ name: user.name || null, email: user.email || null });
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch user" });
   }
