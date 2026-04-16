@@ -50,13 +50,25 @@ router.post("/", authenticate, requireRole("lawyer"), async (req, res) => {
       return res.status(400).json({ error: "Invalid hourly rate" });
     }
 
+    // Check if profile already exists
+    const existing = await db.collection("lawyers").doc(userId).get();
+    const currentStatus = existing.exists ? existing.data().status : null;
+
     const lawyer = await createLawyerProfile(userId, {
       userId,
       name: cleanName,
       specialties: cleanSpecialties,
       hourlyRate: cleanRate,
       bio: cleanBio,
+      // Keep existing status if already approved, otherwise set pending
+      status: currentStatus === "approved" ? "approved" : "pending",
+      updatedAt: new Date(),
     });
+
+    // Also save name to users collection so it shows on client-facing displays
+    if (cleanName) {
+      await db.collection("users").doc(userId).update({ name: cleanName }).catch(() => {});
+    }
 
     res.json(lawyer);
   } catch (err) {

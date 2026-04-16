@@ -26,12 +26,14 @@ function LawyerDashboard() {
   const navigate = useNavigate();
 
   // Profile
+  const [lawyerName, setLawyerName] = useState("");
   const [specialties, setSpecialties] = useState("");
   const [hourlyRate, setHourlyRate] = useState("");
   const [bio, setBio] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
   const [clientNames, setClientNames] = useState({});
+  const [lawyerStatus, setLawyerStatus] = useState(null);
 
   // Availability
   const [days, setDays] = useState(makeDefaultDays());
@@ -67,14 +69,7 @@ function LawyerDashboard() {
           try {
             const token2 = await firebaseUser.getIdToken();
             const res = await api.get(`/users/${clientId}`, { headers: { Authorization: `Bearer ${token2}` } });
-            const userEmail = res.data?.email;
-            // Also try lawyers collection in case this is a lawyer booking
-            let lawyerName = null;
-            try {
-              const lRes = await api.get(`/lawyers/${clientId}`);
-              lawyerName = lRes.data?.name || null;
-            } catch {}
-            nameMap[clientId] = lawyerName || res.data?.name || userEmail || `Cliente #${clientId.slice(0, 6)}`;
+            nameMap[clientId] = res.data?.name || res.data?.email || `Cliente #${clientId.slice(0, 6)}`;
           } catch { nameMap[clientId] = `Cliente #${clientId.slice(0, 6)}`; }
         }));
         setClientNames(nameMap);
@@ -82,9 +77,11 @@ function LawyerDashboard() {
         try {
           const p = await api.get(`/lawyers/${firebaseUser.uid}`);
           if (p?.data) {
+            setLawyerName(p.data.name || "");
             setSpecialties(p.data.specialties?.join(", ") || "");
             setHourlyRate(p.data.hourlyRate || "");
             setBio(p.data.bio || "");
+            setLawyerStatus(p.data.status || "pending");
           }
         } catch {}
 
@@ -118,6 +115,7 @@ function LawyerDashboard() {
     try {
       const token = await user.getIdToken();
       await api.post("/lawyers", {
+        name: lawyerName.trim(),
         specialties: specialties.split(",").map(s => s.trim()).filter(Boolean),
         hourlyRate: parseFloat(hourlyRate), bio,
       }, { headers: { Authorization: `Bearer ${token}` } });
@@ -199,6 +197,25 @@ function LawyerDashboard() {
           </div>
         </div>
 
+        {/* Approval status banner */}
+        {lawyerStatus === "pending" && (
+          <div style={{ background: "#fef9e7", border: "1.5px solid var(--gold)", borderRadius: "var(--radius)", padding: "0.75rem 1.25rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.25rem" }}>⏳</span>
+            <div>
+              <p style={{ fontWeight: "600", color: "var(--brown-deep)", fontSize: "0.9rem" }}>Perfil pendiente de aprobación · Profile pending approval</p>
+              <p style={{ color: "var(--gray-warm)", fontSize: "0.8rem" }}>Su perfil está siendo revisado por el administrador. No aparecerá en la lista de abogados hasta ser aprobado. · Your profile is being reviewed. You won't appear in the lawyer list until approved.</p>
+            </div>
+          </div>
+        )}
+        {lawyerStatus === "rejected" && (
+          <div style={{ background: "#fdf2f2", border: "1.5px solid var(--error)", borderRadius: "var(--radius)", padding: "0.75rem 1.25rem", marginBottom: "1.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <span style={{ fontSize: "1.25rem" }}>❌</span>
+            <div>
+              <p style={{ fontWeight: "600", color: "var(--error)", fontSize: "0.9rem" }}>Perfil no aprobado · Profile not approved</p>
+              <p style={{ color: "var(--gray-warm)", fontSize: "0.8rem" }}>Por favor contáctenos en prudentetorres@hotmail.com · Please contact us at prudentetorres@hotmail.com</p>
+            </div>
+          </div>
+        )}
         <div className="fade-up-2 dash-stats-row" style={s.statsRow}>
           {[
             { label: "Total", value: appts.length, icon: "📋" },
@@ -395,6 +412,11 @@ function LawyerDashboard() {
         {activeTab === "profile" && (
           <div className="card fade-up" style={{ padding: "2rem", maxWidth: "600px" }}>
             <h2 style={s.sectionTitle}>My Lawyer Profile</h2>
+            <div className="form-group">
+              <label className="form-label">Nombre completo · Full name</label>
+              <input className="form-input" type="text" placeholder="Lic. Juan Prudente Torres"
+                value={lawyerName} onChange={e => setLawyerName(e.target.value)} />
+            </div>
             <div className="form-group">
               <label className="form-label">Specialties</label>
               <input className="form-input" placeholder="Family Law, Immigration" value={specialties} onChange={e => setSpecialties(e.target.value)} />

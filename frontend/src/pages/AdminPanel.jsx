@@ -14,6 +14,7 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({ users: 0, lawyers: 0, clients: 0, appointments: 0, pending: 0, confirmed: 0, completed: 0, cancelled: 0 });
   const [users, setUsers] = useState([]);
+  const [lawyers, setLawyers] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -39,13 +40,16 @@ export default function AdminPanel() {
       const token = await firebaseUser.getIdToken();
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [usersRes, apptsRes] = await Promise.all([
+      const [usersRes, apptsRes, lawyersRes] = await Promise.all([
         api.get("/admin/users", { headers }),
         api.get("/admin/appointments", { headers }),
+        api.get("/admin/lawyers", { headers }),
       ]);
 
       const usersData = usersRes.data || [];
       const apptsData = apptsRes.data || [];
+      const lawyersData = lawyersRes.data || [];
+      setLawyers(lawyersData);
 
       setUsers(usersData);
       setAppointments(apptsData);
@@ -64,6 +68,18 @@ export default function AdminPanel() {
       alert("Failed to load admin data: " + (err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLawyerStatus = async (lawyerId, status) => {
+    try {
+      const token = await user.getIdToken();
+      await api.patch(`/admin/lawyers/${lawyerId}/status`, { status }, { headers: { Authorization: `Bearer ${token}` } });
+      setLawyers(prev => prev.map(l => l.id === lawyerId ? { ...l, status } : l));
+      // Update stats
+      setStats(prev => ({ ...prev }));
+    } catch (err) {
+      alert("Failed to update: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -153,6 +169,7 @@ export default function AdminPanel() {
             { id: "overview", label: "📊 Overview" },
             { id: "users", label: `👥 Users (${stats.users})` },
             { id: "appointments", label: `📋 Appointments (${stats.appointments})` },
+            { id: "lawyers", label: `⚖️ Lawyers (${lawyers.length})` },
           ].map(tab => (
             <button key={tab.id} style={{ ...s.tab, ...(activeTab === tab.id ? s.tabActive : {}) }}
               onClick={() => setActiveTab(tab.id)}>
@@ -240,6 +257,61 @@ export default function AdminPanel() {
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* LAWYERS APPROVAL */}
+        {activeTab === "lawyers" && (
+          <>
+            <h3 style={s.sectionTitle}>Lawyer Approvals</h3>
+            <div className="card" style={{ overflowX: "auto" }}>
+              <table style={s.table}>
+                <thead><tr style={s.thead}>
+                  <th style={s.th}>Name</th>
+                  <th style={s.th}>Email</th>
+                  <th style={s.th}>Specialties</th>
+                  <th style={s.th}>Rate</th>
+                  <th style={s.th}>Status</th>
+                  <th style={s.th}>Actions</th>
+                </tr></thead>
+                <tbody>
+                  {lawyers.map(l => {
+                    const userInfo = users.find(u => u.id === l.id);
+                    return (
+                      <tr key={l.id} style={s.tr}>
+                        <td style={s.td}>{l.name || "—"}</td>
+                        <td style={s.td}>{userInfo?.email || "—"}</td>
+                        <td style={s.td}>{Array.isArray(l.specialties) ? l.specialties.join(", ") : "—"}</td>
+                        <td style={s.td}>${l.hourlyRate || "—"}/hr</td>
+                        <td style={s.td}>
+                          <span style={{
+                            padding: "0.2rem 0.75rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: "600",
+                            background: l.status === "approved" ? "#d4e8d8" : l.status === "rejected" ? "#fde8e8" : "#fef9e7",
+                            color: l.status === "approved" ? "#1a4a28" : l.status === "rejected" ? "#7a1a1a" : "#7a5200",
+                          }}>
+                            {l.status || "pending"}
+                          </span>
+                        </td>
+                        <td style={{ ...s.td, display: "flex", gap: "0.5rem" }}>
+                          {l.status !== "approved" && (
+                            <button onClick={() => handleLawyerStatus(l.id, "approved")}
+                              style={{ background: "#d4e8d8", border: "none", color: "#1a4a28", borderRadius: "6px", padding: "0.3rem 0.7rem", fontSize: "0.75rem", cursor: "pointer", fontWeight: "600" }}>
+                              ✓ Approve
+                            </button>
+                          )}
+                          {l.status !== "rejected" && (
+                            <button onClick={() => handleLawyerStatus(l.id, "rejected")}
+                              style={{ background: "#fde8e8", border: "none", color: "#7a1a1a", borderRadius: "6px", padding: "0.3rem 0.7rem", fontSize: "0.75rem", cursor: "pointer", fontWeight: "600" }}>
+                              ✕ Reject
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -38,6 +38,7 @@ export default function Auth() {
       const { db } = await import("../firebase");
       const userDoc = await getDoc(doc(db, "users", cred.user.uid));
       const role = userDoc.exists() ? (userDoc.data().role || "client") : "client";
+      setError(""); // clear any stale errors before navigating
       navigate(role === "lawyer" ? "/lawyer-dashboard" : "/dashboard");
     } catch (err) { setError(friendlyError(err.code)); }
     finally { setLoading(false); }

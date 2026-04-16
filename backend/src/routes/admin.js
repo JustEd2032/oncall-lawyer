@@ -72,4 +72,46 @@ router.delete("/users/:id", authenticate, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /admin/lawyers — all lawyers with pending/approved status
+router.get("/lawyers", authenticate, requireAdmin, async (req, res) => {
+  try {
+    const snap = await db.collection("lawyers").get();
+    const lawyers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    res.json(lawyers);
+  } catch (err) {
+    console.error("Admin get lawyers error:", err);
+    res.status(500).json({ error: "Failed to fetch lawyers" });
+  }
+});
+
+// PATCH /admin/lawyers/:id/status — approve or reject
+router.patch("/lawyers/:id/status", authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { status } = req.body; // "approved" | "rejected"
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ error: "Status must be approved or rejected" });
+    }
+
+    await db.collection("lawyers").doc(req.params.id).update({ status });
+
+    // Get lawyer email to notify them
+    const userDoc = await db.collection("users").doc(req.params.id).get();
+    const email = userDoc.exists ? userDoc.data().email : null;
+    const name = userDoc.exists ? (userDoc.data().name || email) : email;
+
+    // Send notification email
+    if (email) {
+      const { sendLawyerStatusEmail } = await import("../services/email.js");
+      await sendLawyerStatusEmail({ toEmail: email, name, status }).catch(e =>
+        console.error("Lawyer status email failed:", e)
+      );
+    }
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Admin approve lawyer error:", err);
+    res.status(500).json({ error: "Failed to update lawyer status" });
+  }
+});
+
 export default router;

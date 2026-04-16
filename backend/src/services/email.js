@@ -212,3 +212,47 @@ export async function sendBookingConfirmation({ toEmail, clientName, lawyerName,
   }).then(() => console.log(`✅ Confirmation sent to ${toEmail}`))
     .catch(err => { console.error(`❌ Confirmation failed ${toEmail}:`, JSON.stringify(err?.response?.body || err.message)); throw err; });
 }
+
+// ── LAWYER STATUS EMAIL (approved / rejected) ──
+export async function sendLawyerStatusEmail({ toEmail, name, status }) {
+  const isApproved = status === "approved";
+
+  const subject = isApproved
+    ? "✅ Su perfil ha sido aprobado · Your profile has been approved"
+    : "❌ Su solicitud no fue aprobada · Your application was not approved";
+
+  const body = isApproved ? `
+    <div class="badge badge-ok">✅ Perfil aprobado · Profile Approved</div>
+    <h1>
+      ¡Bienvenido/a a Prudente Torres!<br/>
+      <em style="font-style:italic;color:var(--brown-light)">Welcome to Prudente Torres!</em>
+    </h1>
+    <p class="lead">
+      Su perfil de abogado/a ha sido revisado y aprobado. Ya puede recibir consultas de clientes a través de la plataforma.<br/>
+      <em>Your attorney profile has been reviewed and approved. You can now receive client consultations through the platform.</em>
+    </p>
+    <a href="${APP_URL}/lawyer-dashboard" class="btn btn-gold">Ir a mi panel · Go to my dashboard</a>
+  ` : `
+    <div class="badge badge-warn">❌ Solicitud no aprobada · Not Approved</div>
+    <h1>
+      Actualización sobre su solicitud<br/>
+      <em style="font-style:italic;color:var(--brown-light)">Update on your application</em>
+    </h1>
+    <p class="lead">
+      Lamentamos informarle que su perfil no ha sido aprobado en este momento. Para más información contáctenos directamente.<br/>
+      <em>We regret to inform you that your profile has not been approved at this time. For more information please contact us directly.</em>
+    </p>
+    <a href="mailto:prudentetorres@hotmail.com" class="btn btn-dark">Contactar · Contact Us</a>
+  `;
+
+  const html = emailShell(body);
+
+  await sgMail.send({
+    to: toEmail,
+    from: { name: "Prudente Torres & Asociados", email: FROM_EMAIL },
+    replyTo: REPLY_TO,
+    subject,
+    html,
+  }).then(() => console.log(`✅ Lawyer status email sent to ${toEmail}`))
+    .catch(err => { console.error(`❌ Lawyer status email failed:`, JSON.stringify(err?.response?.body || err.message)); throw err; });
+}

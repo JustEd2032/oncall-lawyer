@@ -19,7 +19,7 @@ function LawyerList() {
         let data = res.data;
         if (!Array.isArray(data)) data = data?.lawyers ?? data?.data ?? [];
         if (!Array.isArray(data)) data = [];
-        setLawyers(data);
+        setLawyers(data.filter(l => l.status === "approved"));
       })
       .catch(() => setLawyers([]))
       .finally(() => setLoading(false));
@@ -86,7 +86,7 @@ function LawyerCard({ lawyer, onBook }) {
       <div style={st.cardTop}>
         <div style={st.avatar}>{initials}</div>
         <div>
-          <p style={st.lawyerName}>Attorney #{lawyer.id.slice(0, 6)}</p>
+          <p style={st.lawyerName}>{lawyer.name || `Lic. #${lawyer.id.slice(0, 6)}`}</p>
           <p style={st.lawyerRate}>${lawyer.hourlyRate}/hr</p>
         </div>
       </div>
@@ -240,7 +240,7 @@ function BookingModal({ lawyer, user, onClose, onBooked }) {
               {lawyer.id.slice(0, 2).toUpperCase()}
             </div>
             <div>
-              <p style={{ fontWeight: "600", color: "var(--navy)" }}>Attorney #{lawyer.id.slice(0, 6)}</p>
+              <p style={{ fontWeight: "600", color: "var(--brown-deep)" }}>{lawyer.name || `Lic. #${lawyer.id.slice(0, 6)}`}</p>
               <p style={{ color: "var(--gold)", fontWeight: "600", fontSize: "0.85rem" }}>
                 ${lawyer.hourlyRate}/hr · {appointmentDuration} min sessions
               </p>
@@ -322,7 +322,7 @@ function BookingModal({ lawyer, user, onClose, onBooked }) {
                         {formatHour(expandedHour)} — pick a start time
                         <span style={{ color: "var(--gray-500)", fontWeight: "400" }}> (session ends {appointmentDuration} min later)</span>
                       </p>
-                      <div style={st.subSlotsGrid} className="slot-grid">
+                      <div style={st.subSlotsGrid}>
                         {hourGroups[expandedHour].map(slot => (
                           <button
                             key={slot.time}
@@ -394,7 +394,7 @@ const st = {
   card: { padding: "1.75rem", display: "flex", flexDirection: "column", gap: "1rem" },
   cardTop: { display: "flex", alignItems: "center", gap: "1rem" },
   avatar: { width: "46px", height: "46px", borderRadius: "12px", background: "var(--navy)", color: "var(--gold)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "700", fontSize: "0.95rem", flexShrink: 0 },
-  lawyerName: { fontWeight: "700", color: "var(--navy)", fontSize: "1rem" },
+  lawyerName: { fontWeight: "700", color: "var(--brown-deep)", fontSize: "1rem" },
   lawyerRate: { color: "var(--gold)", fontWeight: "600", fontSize: "0.9rem" },
   specialties: { display: "flex", flexWrap: "wrap", gap: "0.4rem" },
   specialtyBadge: { background: "var(--gray-50)", color: "var(--navy-muted)", border: "1px solid var(--gray-100)" },
