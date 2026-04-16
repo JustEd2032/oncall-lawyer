@@ -125,7 +125,7 @@ function getEndTime(time, duration) {
 }
 
 function BookingModal({ lawyer, user, onClose, onBooked }) {
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedDate, setSelectedDate] = useState(() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`; });
   const [slots, setSlots] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState("");
   const [expandedHour, setExpandedHour] = useState(null);
@@ -217,7 +217,7 @@ function BookingModal({ lawyer, user, onClose, onBooked }) {
     }
   };
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const _n = new Date(); const todayStr = `${_n.getFullYear()}-${String(_n.getMonth()+1).padStart(2,"0")}-${String(_n.getDate()).padStart(2,"0")}`;
 
   const statusColors = {
     available:   { bg: "var(--brown-deep)",  color: "var(--gold-light)",  border: "var(--brown-deep)" },
